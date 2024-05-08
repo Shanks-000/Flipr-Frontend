@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Translation App</title>
+  <link rel="stylesheet" type="text/css" href="styles/style.css">
+  <style>
+    /* Basic styling for dropdowns, buttons, and other elements */
+    
+  </style>
+</head>
+<body>
+  <!-- Language Selection Dropdowns -->
+  <div class="dropdown-container" id="input-language">
+    <div class="selected" data-value="en">English (English)</div>
+    <ul class="dropdown-list"></ul>
+  </div>
+
+  <div class="dropdown-container" id="output-language">
+    <div class="selected" data-value="es">Spanish (Español)</div>
+    <ul class="dropdown-list"></ul>
+  </div>
+
+  <!-- Swap Button -->
+  <button class="swap-position">Swap</button>
+
+  <!-- Text Areas for Input and Output -->
+  <textarea id="input-text" placeholder="Enter text here..." rows="5"></textarea>
+  <textarea id="output-text" placeholder="Translation will appear here..." readonly rows="5"></textarea>
+
+  <!-- Dark Mode Toggle -->
+  <label>
+    <input type="checkbox" id="dark-mode-btn" /> Dark Mode
+  </label>
+
+  <!-- Upload Document -->
+  <input type="file" id="upload-document" />
+  <span id="upload-title">Upload a document</span>
+
+  <!-- Download Button -->
+  <button id="download-btn">Download Translation</button>
+
+  <script>
+    const languages = [
+      { code: 'en', name: 'English', native: 'English' },
+      { code: 'hi', name: 'Hindi', native: 'हिंदी' },
+      { code: 'es', name: 'Spanish', native: 'Español' },
+      { code: 'fr', name: 'French', native: 'Français' },
+      { code: 'de', name: 'German', native: 'Deutsch' },
+      { code: 'zh-CN', name: 'Chinese', native: '中文' },
+      // Add more languages as needed
+    ];
+
+    const dropdowns = document.querySelectorAll(".dropdown-container"),
+      inputLanguageDropdown = document.querySelector("#input-language"),
+      outputLanguageDropdown = document.querySelector("#output-language"),
+      inputTextElem = document.querySelector("#input-text"),
+      outputTextElem = document.querySelector("#output-text");
+
+    function populateDropdown(dropdown, options) {
+      const list = dropdown.querySelector(".dropdown-list");
+      list.innerHTML = "";
+      options.forEach((option) => {
+        const li = document.createElement("li");
+        li.textContent = `${option.name} (${option.native})`;
+        li.dataset.value = option.code;
+        li.classList.add("option");
+        list.appendChild(li);
+      });
+    }
+
+    populateDropdown(inputLanguageDropdown, languages);
+    populateDropdown(outputLanguageDropdown, languages);
+
+    dropdowns.forEach((dropdown) => {
+      dropdown.addEventListener("click", (e) => {
+        dropdown.classList.toggle("active");
+      });
+
+      dropdown.querySelectorAll(".option").forEach((item) => {
+        item.addEventListener("click", (e) => {
+          dropdown.querySelectorAll(".option").forEach((option) => {
+            option.classList.remove("active");
+          });
+          item.classList.add("active");
+          const selected = dropdown.querySelector(".selected");
+          selected.textContent = item.textContent;
+          selected.dataset.value = item.dataset.value;
+          translate();
+        });
+      });
+    });
+
+    function translate() {
+      const inputText = inputTextElem.value;
+      const inputLanguage = inputLanguageDropdown.querySelector(".selected").dataset.value;
+      const outputLanguage = outputLanguageDropdown.querySelector(".selected").dataset.value;
+
+      if (inputText.trim() === "") {
+        outputTextElem.value = "";
+        return;
+      }
+
+      const url = `https://google-translate1.p.rapidapi.com/language/translate/v2`;
+
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          "x-rapidapi-host": "google-translate1.p.rapidapi.com",
+          "x-rapidapi-key": "7ba34714b6msh0ace991b3e09c4bp172f9bjsnf0ee71a8098a",
+        },
+        body: `q=${encodeURIComponent(inputText)}&target=${outputLanguage}&source=${inputLanguage}`,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Translation error: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then((json) => {
+          if (json.data && json.data.translations && json.data.translations[0]) {
+            outputTextElem.value = json.data.translations[0].translatedText;
+          } else {
+            console.error("Translation failed:", json);
+          }
+        })
+        .catch((error) => {
+          console.error("Error during translation:", error);
+        });
+    }
+
+    inputTextElem.addEventListener("input", (e) => {
+      translate();
+    });
+
+    // Dark mode toggle
+    const darkModeCheckbox = document.getElementById("dark-mode-btn");
+    darkModeCheckbox.addEventListener("change", () => {
+      document.body.classList.toggle("dark");
+    });
+
+  </script>
+</body>
+</html>
